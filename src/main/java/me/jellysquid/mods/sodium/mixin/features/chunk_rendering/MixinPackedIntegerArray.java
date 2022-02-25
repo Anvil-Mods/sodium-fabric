@@ -2,12 +2,12 @@ package me.jellysquid.mods.sodium.mixin.features.chunk_rendering;
 
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.PackedIntegerArrayExtended;
 import me.jellysquid.mods.sodium.world.slice.cloned.palette.ClonedPalette;
-import net.minecraft.util.collection.PackedIntegerArray;
+import net.minecraft.util.SimpleBitStorage;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(PackedIntegerArray.class)
+@Mixin(SimpleBitStorage.class)
 public class MixinPackedIntegerArray implements PackedIntegerArrayExtended {
     @Shadow
     @Final

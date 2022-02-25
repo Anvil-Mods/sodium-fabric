@@ -2,8 +2,8 @@ package me.jellysquid.mods.sodium.mixin.core;
 
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.FrustumAdapter;
 import me.jellysquid.mods.sodium.interop.vanilla.math.frustum.JomlFrustum;
+import net.minecraft.client.renderer.culling.Frustum;
 import me.jellysquid.mods.sodium.interop.vanilla.math.JomlHelper;
-import net.minecraft.client.render.Frustum;
 import org.apache.commons.lang3.Validate;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -28,8 +28,8 @@ public class MixinFrustum implements FrustumAdapter {
     private Matrix4f modelViewMatrix;
 
     @Inject(method = "init", at = @At("RETURN"))
-    public void init(net.minecraft.util.math.Matrix4f modelViewMatrix,
-                     net.minecraft.util.math.Matrix4f projectionMatrix,
+    public void init(com.mojang.math.Matrix4f modelViewMatrix,
+                     com.mojang.math.Matrix4f projectionMatrix,
                      CallbackInfo ci) {
         this.projectionMatrix = JomlHelper.copy(projectionMatrix);
         this.modelViewMatrix = JomlHelper.copy(modelViewMatrix);

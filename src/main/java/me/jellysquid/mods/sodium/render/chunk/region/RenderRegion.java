@@ -13,7 +13,7 @@ import me.jellysquid.mods.sodium.render.chunk.state.UploadedChunkMesh;
 import me.jellysquid.mods.sodium.render.stream.StreamingBuffer;
 import me.jellysquid.mods.sodium.render.terrain.format.TerrainVertexFormats;
 import me.jellysquid.mods.sodium.util.MathUtil;
-import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.core.SectionPos;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Map;
@@ -75,7 +75,7 @@ public class RenderRegion {
     }
 
     public static long getRegionKeyForChunk(int x, int y, int z) {
-        return ChunkSectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
+        return SectionPos.asLong(x >> REGION_WIDTH_SH, y >> REGION_HEIGHT_SH, z >> REGION_LENGTH_SH);
     }
 
     public int getOriginX() {

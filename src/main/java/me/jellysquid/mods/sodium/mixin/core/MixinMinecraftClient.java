@@ -8,22 +8,23 @@ import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.render.immediate.RenderImmediate;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.RunArgs;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.main.GameConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public class MixinMinecraftClient {
     private final PriorityQueue<Fence> fences = new ObjectArrayFIFOQueue<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void postInit(RunArgs args, CallbackInfo ci) {
+    private void postInit(GameConfig args, CallbackInfo ci) {
         if (SodiumClientMod.options().isReadOnly()) {
-            var parent = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient.getInstance().setScreen(new UserConfigErrorScreen(() -> parent));
+            var parent = Minecraft.getInstance().screen;
+            Minecraft.getInstance().setScreen(new UserConfigErrorScreen(() -> parent));
         }
     }
 

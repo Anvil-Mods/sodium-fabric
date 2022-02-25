@@ -1,86 +1,146 @@
-plugins {
-    id 'fabric-loom' version '0.10-SNAPSHOT'
-    id 'org.ajoberstar.grgit' version '4.1.0'
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+		maven { url = "file://${System.getProperty("user.home")}/mcmodsrepo" }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+    		classpath 'org.spongepowered:mixingradle:0.7.+'
+    }
 }
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
 
-sourceCompatibility = "17"
-targetCompatibility = "17"
+apply plugin: 'org.spongepowered.mixin'
 
-archivesBaseName = "${project.archives_base_name}-mc${project.minecraft_version}"
-version = "${project.mod_version}+${getVersionMetadata()}"
-group = project.maven_group
+group = project.group
+archivesBaseName = project.modId
 
+println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 minecraft {
-    refmapName = "mixins.sodium.refmap.json"
-    accessWidener = file("src/main/resources/sodium.accesswidener")
+
+    mappings channel: 'official', version: project.minecraftVersion
+
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+      			property 'mixin.env.disableRefMap', 'true'
+
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                hothotbars {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+      			property 'mixin.env.disableRefMap', 'true'
+
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                hothotbars {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+      			property 'mixin.env.disableRefMap', 'true'
+
+            property 'forge.logging.console.level', 'debug'
+
+            args '--mod', project.modId, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+
+            mods {
+                hothotbars {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
 }
 
-configurations {
-    modIncludeImplementation
+sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-    include.extendsFrom modIncludeImplementation
-    modImplementation.extendsFrom modIncludeImplementation
+repositories {
 }
 
 dependencies {
-    //to change the versions see the gradle.properties file
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    minecraft 'net.minecraftforge:forge:'+project.minecraftVersion+'-'+project.forgeVersion
 
-    implementation 'org.joml:joml:1.10.2'
-    include 'org.joml:joml:1.10.2'
+		implementation 'org.joml:joml:1.10.2'
 
-    // Fabric API
-    modIncludeImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version))
-    modIncludeImplementation(fabricApi.module("fabric-resource-loader-v0", project.fabric_version))
+  	implementation 'org.spongepowered:mixin:0.8.5'
+  	annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+mixin {
+		config "sodium.mixins.json"
+		add sourceSets.main, "sodium.refmap.json"
+
+		debug.verbose = true
+    debug.export = true
 }
 
 processResources {
-    inputs.property "version", project.version
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
+    def buildProps = project.properties.clone()
+
+    buildProps.put('file', [jarVersion: project.version])
+
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+
+        expand buildProps
     }
-}
-
-// ensure that the encoding is set to UTF-8, no matter what the system default is
-// this fixes some edge cases with special characters not displaying correctly
-// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-java {
-    withSourcesJar()
 }
 
 jar {
-    from "LICENSE.txt"
+    manifest {
+        attributes([
+                "Specification-Title"     : project.modId,
+                "Specification-Vendor"    : project.modAuthor,
+                "Specification-Version"   : project.jar.archiveVersion,
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : project.modAuthor,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
 }
 
-def getVersionMetadata() {
-    def build_id = System.getenv("GITHUB_RUN_NUMBER")
 
-    // CI builds only
-    if (build_id != null) {
-        return "build.${build_id}"
-    }
+jar.finalizedBy('reobfJar')
 
-    if (grgit != null) {
-        def head = grgit.head()
-        def id = head.abbreviatedId
+java {
+		withSourcesJar()
+		withJavadocJar()
+		toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
 
-        // Flag the build if the build tree is not clean
-        if (!grgit.status().clean) {
-            id += "-dirty"
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
         }
-
-        return "rev.${id}"
     }
-
-    // No tracking information could be found about the build
-    return "unknown"
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
 }

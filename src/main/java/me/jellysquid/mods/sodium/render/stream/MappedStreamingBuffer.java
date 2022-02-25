@@ -1,5 +1,10 @@
 package me.jellysquid.mods.sodium.render.stream;
 
+import java.nio.BufferOverflowException;
+import java.nio.ByteBuffer;
+
+import org.lwjgl.system.MemoryUtil;
+
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import me.jellysquid.mods.sodium.opengl.buffer.Buffer;
 import me.jellysquid.mods.sodium.opengl.buffer.BufferMapFlags;
@@ -9,11 +14,7 @@ import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.sync.Fence;
 import me.jellysquid.mods.sodium.opengl.util.EnumBitField;
 import me.jellysquid.mods.sodium.util.MathUtil;
-import net.minecraft.util.math.MathHelper;
-import org.lwjgl.system.MemoryUtil;
-
-import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
+import net.minecraft.util.Mth;
 
 public class MappedStreamingBuffer implements StreamingBuffer {
     private final RenderDevice device;
@@ -47,7 +48,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             throw new OutOfMemoryError("data.remaining() > capacity");
         }
 
-        int offset = MathHelper.roundUpToMultiple(this.position, alignment);
+        int offset = Mth.roundToward(this.position, alignment);
 
         if (offset + length > this.capacity) {
             this.flush0();
@@ -78,7 +79,7 @@ public class MappedStreamingBuffer implements StreamingBuffer {
             throw new OutOfMemoryError("data.remaining() > capacity");
         }
 
-        int offset = MathHelper.roundUpToMultiple(this.position, alignment);
+        int offset = Mth.roundToward(this.position, alignment);
 
         if (offset + length > this.capacity) {
             this.flush0();

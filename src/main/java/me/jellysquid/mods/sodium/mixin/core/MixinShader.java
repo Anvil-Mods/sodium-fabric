@@ -3,11 +3,10 @@ package me.jellysquid.mods.sodium.mixin.core;
 import me.jellysquid.mods.sodium.interop.vanilla.mixin.ShaderExtended;
 import me.jellysquid.mods.sodium.opengl.device.RenderDevice;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription;
+import me.jellysquid.mods.sodium.opengl.shader.ShaderDescription.Builder;
 import me.jellysquid.mods.sodium.opengl.shader.ShaderType;
 import me.jellysquid.mods.sodium.render.immediate.VanillaShaderInterface;
-import net.minecraft.client.gl.Program;
-import net.minecraft.client.render.Shader;
-import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.renderer.ShaderInstance;
 import org.lwjgl.opengl.GL45C;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,10 +14,11 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
+import com.mojang.blaze3d.shaders.Program;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.List;
 
-@Mixin(Shader.class)
+@Mixin(ShaderInstance.class)
 public class MixinShader implements ShaderExtended {
     @Shadow
     @Final
@@ -53,7 +53,7 @@ public class MixinShader implements ShaderExtended {
 
         int nextAttributeIndex = 0;
 
-        for (String attributeName : this.format.getShaderAttributes()) {
+        for (String attributeName : this.format.getElementAttributeNames()) {
             desc.addAttributeBinding(attributeName, nextAttributeIndex++);
         }
 
@@ -75,7 +75,7 @@ public class MixinShader implements ShaderExtended {
     }
 
     private static String getShaderSource(Program program) {
-        return GL45C.glGetShaderSource(program.getShaderRef());
+        return GL45C.glGetShaderSource(program.getId());
     }
 
     @Inject(method = "close", at = @At("RETURN"))

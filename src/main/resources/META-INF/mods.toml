@@ -1,0 +1,31 @@
+modLoader="javafml"
+loaderVersion="[39,)"
+issueTrackerURL=""
+license="${license}"
+logoFile=""
+
+[[mods]]
+modId="sodium"
+updateJSONURL=""
+version="${file.jarVersion}"
+displayName="${modName}"
+displayURL="${modHomepage}"
+credits="${modCredits}"
+authors="${modAuthor}"
+description='''
+${modDescription}
+'''
+
+[[dependencies.sodium]]
+    modId="forge"
+    mandatory=true
+    versionRange="[39,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.sodium]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="${versionRange}"
+    ordering="NONE"
+    side="CLIENT"

@@ -1,83 +1,101 @@
 package me.jellysquid.mods.sodium;
 
-import me.jellysquid.mods.sodium.config.user.UserConfig;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
+import java.io.IOException;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
+import me.jellysquid.mods.sodium.config.user.UserConfig;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.IExtensionPoint;
+import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.NetworkConstants;
 
-public class SodiumClientMod implements ClientModInitializer {
-    private static UserConfig CONFIG;
-    private static Logger LOGGER;
+@Mod(SodiumClientMod.MOD_ID)
+public class SodiumClientMod {
+	private static UserConfig CONFIG;
+	private static Logger LOGGER;
 
-    private static String MOD_VERSION;
+	public static final String MOD_ID = "sodium";
 
-    @Override
-    public void onInitializeClient() {
-        ModContainer mod = FabricLoader.getInstance()
-                .getModContainer("sodium")
-                .orElseThrow(NullPointerException::new);
+	public static final IEventBus FORGE_EVENT_BUS = MinecraftForge.EVENT_BUS;
+	public static final IEventBus MOD_EVENT_BUS = FMLJavaModLoadingContext.get().getModEventBus();
 
-        MOD_VERSION = mod.getMetadata()
-                .getVersion()
-                .getFriendlyString();
+	private static String MOD_VERSION;
 
-        LOGGER = LogManager.getLogger("Sodium");
-        CONFIG = loadConfig();
-    }
+	public SodiumClientMod() {
+		MOD_EVENT_BUS.addListener(this::onInitializeClient);
 
-    public static UserConfig options() {
-        if (CONFIG == null) {
-            throw new IllegalStateException("Config not yet available");
-        }
+		ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
+				() -> new IExtensionPoint.DisplayTest(() -> NetworkConstants.IGNORESERVERONLY, (a, b) -> true));
 
-        return CONFIG;
-    }
+	}
 
-    public static Logger logger() {
-        if (LOGGER == null) {
-            throw new IllegalStateException("Logger not yet available");
-        }
+	@SubscribeEvent
+	public void onInitializeClient(FMLClientSetupEvent event) {
+		ModContainer mod = ModLoadingContext.get().getActiveContainer();
 
-        return LOGGER;
-    }
+		MOD_VERSION = mod.getModInfo().getVersion().toString();
 
-    private static UserConfig loadConfig() {
-        try {
-            return UserConfig.load();
-        } catch (Exception e) {
-            LOGGER.error("Failed to load configuration file", e);
-            LOGGER.error("Using default configuration file in read-only mode");
+		LOGGER = LogManager.getLogger("Sodium");
+		CONFIG = loadConfig();
+	}
 
-            var config = new UserConfig();
-            config.setReadOnly();
+	public static UserConfig options() {
+		if (CONFIG == null) {
+			throw new IllegalStateException("Config not yet available");
+		}
 
-            return config;
-        }
-    }
+		return CONFIG;
+	}
 
-    public static void restoreDefaultOptions() {
-        CONFIG = UserConfig.defaults();
+	public static Logger logger() {
+		if (LOGGER == null) {
+			throw new IllegalStateException("Logger not yet available");
+		}
 
-        try {
-            CONFIG.writeChanges();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write config file", e);
-        }
-    }
+		return LOGGER;
+	}
 
-    public static String getVersion() {
-        if (MOD_VERSION == null) {
-            throw new NullPointerException("Mod version hasn't been populated yet");
-        }
+	private static UserConfig loadConfig() {
+		try {
+			return UserConfig.load();
+		} catch (Exception e) {
+			LOGGER.error("Failed to load configuration file", e);
+			LOGGER.error("Using default configuration file in read-only mode");
 
-        return MOD_VERSION;
-    }
+			var config = new UserConfig();
+			config.setReadOnly();
 
-    public static boolean isDirectMemoryAccessEnabled() {
-        return options().advanced.allowDirectMemoryAccess;
-    }
+			return config;
+		}
+	}
+
+	public static void restoreDefaultOptions() {
+		CONFIG = UserConfig.defaults();
+
+		try {
+			CONFIG.writeChanges();
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to write config file", e);
+		}
+	}
+
+	public static String getVersion() {
+		if (MOD_VERSION == null) {
+			throw new NullPointerException("Mod version hasn't been populated yet");
+		}
+
+		return MOD_VERSION;
+	}
+
+	public static boolean isDirectMemoryAccessEnabled() {
+		return options().advanced.allowDirectMemoryAccess;
+	}
 }

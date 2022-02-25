@@ -5,6 +5,17 @@ build/
 out/
 classes/
 
+# eclipse
+
+eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+.factorypath
+
 # idea
 
 .idea/

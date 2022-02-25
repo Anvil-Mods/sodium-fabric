@@ -1,20 +1,30 @@
 package me.jellysquid.mods.sodium.mixin.features.gui.fast_loading_screen;
 
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
+import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Shadow;
+
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.math.Matrix4f;
+
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.VanillaVertexFormats;
-import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.interop.vanilla.vertex.formats.screen.BasicScreenQuadVertexSink;
+import me.jellysquid.mods.sodium.render.vertex.VertexDrain;
 import me.jellysquid.mods.sodium.util.packed.ColorABGR;
 import me.jellysquid.mods.sodium.util.packed.ColorARGB;
-import net.minecraft.client.gui.WorldGenerationProgressTracker;
-import net.minecraft.client.gui.screen.LevelLoadingScreen;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Matrix4f;
-import net.minecraft.world.chunk.ChunkStatus;
-import org.spongepowered.asm.mixin.*;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.server.level.progress.StoringChunkProgressListener;
+import net.minecraft.world.level.chunk.ChunkStatus;
 
 /**
  * Re-implements the loading screen with considerations to reduce draw calls and other sources of overhead. This can
@@ -42,7 +52,7 @@ public class MixinLevelLoadingScreen {
      * @author JellySquid
      */
     @Overwrite
-    public static void drawChunkMap(MatrixStack matrixStack, WorldGenerationProgressTracker tracker, int mapX, int mapY, int mapScale, int mapPadding) {
+    public static void drawChunkMap(PoseStack matrixStack, StoringChunkProgressListener tracker, int mapX, int mapY, int mapScale, int mapPadding) {
         if (STATUS_TO_COLOR_FAST == null) {
             STATUS_TO_COLOR_FAST = new Reference2IntOpenHashMap<>(STATUS_TO_COLOR.size());
             STATUS_TO_COLOR_FAST.put(null, NULL_STATUS_COLOR);
@@ -52,21 +62,21 @@ public class MixinLevelLoadingScreen {
 
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
-        Matrix4f matrix = matrixStack.peek().getPositionMatrix();
+        Matrix4f matrix = matrixStack.last().pose();
 
-        Tessellator tessellator = Tessellator.getInstance();
+        Tesselator tessellator = Tesselator.getInstance();
 
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         
-        BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        BufferBuilder buffer = tessellator.getBuilder();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         BasicScreenQuadVertexSink sink = VertexDrain.of(buffer).createSink(VanillaVertexFormats.BASIC_SCREEN_QUADS);
 
-        int centerSize = tracker.getCenterSize();
-        int size = tracker.getSize();
+        int centerSize = tracker.getFullDiameter();
+        int size = tracker.getDiameter();
 
         int tileSize = mapScale + mapPadding;
 
@@ -95,7 +105,7 @@ public class MixinLevelLoadingScreen {
             for (int z = 0; z < size; ++z) {
                 int tileY = mapStartY + z * tileSize;
 
-                ChunkStatus status = tracker.getChunkStatus(x, z);
+                ChunkStatus status = tracker.getStatus(x, z);
                 int color;
 
                 if (prevStatus == status) {
@@ -112,7 +122,7 @@ public class MixinLevelLoadingScreen {
         }
 
         sink.flush();
-        tessellator.draw();
+        tessellator.end();
 
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
